@@ -1,0 +1,17 @@
+langchain-core 
+langchain-community 
+langchain-chroma 
+langchain-huggingface
+langchain-groq 
+chromadb 
+sentence-transformers 
+langchain-text-splitters
+rank-bm25
+pypdf 
+python-docx
+docx2txt 
+python-dotenv 
+pydantic 
+fastapi 
+uvicorn[standard]
+pytest 
