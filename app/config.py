@@ -27,7 +27,9 @@ class Settings:
     reranker_model: str = os.getenv("RERANKER_MODEL", "")
 
     chunk_size: int = env_int("CHUNK_SIZE", 900)
-    chunk_overlap: int = env_int("CHUNK_OVERLAP", 150)      
+    chunk_overlap: int = env_int("CHUNK_OVERLAP", 150)  
+
+    rerank_top_k: int = env_int("RERANK_TOP_K", 40)    
 
 
 
