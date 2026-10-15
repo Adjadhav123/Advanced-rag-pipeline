@@ -1,5 +1,3 @@
-from pydantic.v1.typing import convert_generics
-from _typeshed import SupportsRichComparison
 import hashlib
 import logging
 from pathlib import Path 
@@ -58,12 +56,11 @@ def load_documents(directory_path: str | Path ) -> list[Document]:
                     continue
 
                 try:
-                    relative_score = str(path.relative_to(root))
+                    relative_source = str(path.relative_to(root))
                 except ValueError:
-                    relative_score = path.name
+                    relative_source = path.name
 
-                
-                doc.metadata["sources"] = relative_score
+                doc.metadata["source"] = relative_source
                 doc.metadata["file_type"] = suffix.lstrip(".")
                 documents.append(doc)
         
@@ -89,7 +86,9 @@ def split_documents(documents: list[Document]) -> list[Document]:
 
     result : list[Document] = []
 
-    for chunk in chunks:
+    seen_ids: set[str] = set()
+
+    for idx, chunk in enumerate(chunks):
         content = chunk.page_content.strip()
         if not content:
             continue
@@ -97,20 +96,17 @@ def split_documents(documents: list[Document]) -> list[Document]:
         chunk.page_content = content 
         metadata = chunk.metadata
 
-        identity = "|".join(
-            [
-                str(metadata.get("source","")),
-                str(metadata.get("page","")),
-                str(metadata.get("start_idx","")),
-                content
-            ]
-        )
+        source = str(metadata.get("source") or metadata.get("sources") or "")
+        page = str(metadata.get("page", ""))
+        start_index = str(metadata.get("start_index", metadata.get("start_idx", idx)))
 
-        chunk_id = hashlib.sha256(
-            identity.encode('utf-8')
-        ).hexdigest()
+        identity = f"{source}|{page}|{start_index}|{content}"
+        chunk_id = hashlib.sha256(identity.encode('utf-8')).hexdigest()
 
+        if chunk_id in seen_ids:
+            chunk_id = hashlib.sha256(f"{identity}|{idx}".encode('utf-8')).hexdigest()
 
+        seen_ids.add(chunk_id)
         metadata["chunk_id"] = chunk_id
         result.append(chunk)
 

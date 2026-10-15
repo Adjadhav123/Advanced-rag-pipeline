@@ -1,10 +1,3 @@
-from numpy import sort
-from logging import exception
-from torch.fx._utils import lazy_format_graph_code
-from torch import rnn_tanh
-import enum
-from yaml import DocumentEndEvent
-from app.services.document_loader import logger
 import json 
 import re 
 
@@ -53,8 +46,10 @@ def get_reranker() -> CrossEncoder:
     )
 
 
-def _history_text(history: list[dict]) -> str:
+def _history_text(history: list[dict] | None) -> str:
     """Convert chat history to readable text."""
+    if not history:
+        return ""
     recent = history[-6*2:]
     lines = []
 
@@ -133,13 +128,13 @@ def expand_queries(question: str) -> str:
     try:
         structured_llm = get_llm().with_structured_output(QueryVariants)
         response = (prompt | structured_llm).invoke(
-            {"question": {question}}
+            {"question": question}
         )
 
         variants = []
         for query in response.queries:
             clean = query.strip()
-            if clean and clean.casefold() !=question.casefold:
+            if clean and clean.casefold() != question.casefold():
                 variants.append(clean)
         
         unique = []
@@ -164,7 +159,7 @@ def get_bm25_retriever() -> BM25Retriever:
 
     if not path.exists():
         raise FileNotFoundError(
-            f"BM25 snapshot not found:{path}"
+            f"BM25 snapshot not found: {path}. Please ingest/index documents first (e.g. run 'python ingest.py')."
         )
 
     records = json.loads(path.read_text(encoding="utf-8"))
